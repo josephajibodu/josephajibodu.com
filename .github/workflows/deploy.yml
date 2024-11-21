@@ -1,4 +1,4 @@
-name: Detailed SSH Deployment Logging
+name: Laravel Deployment
 
 on:
   push:
@@ -12,82 +12,17 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Prepare SSH Key and Logging
-      env:
-        SSH_HOST: ${{ secrets.SSH_HOST }}
-        SSH_USER: ${{ secrets.SSH_USERNAME }}
-        SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-      run: |
-        # Create SSH directory
-        mkdir -p ~/.ssh
-        chmod 700 ~/.ssh
-        
-        # Write SSH key to file
-        echo "$SSH_KEY" > ~/.ssh/deploy_key
-        chmod 600 ~/.ssh/deploy_key
-        
-        # Log SSH configuration details
-        echo "SSH Host: $SSH_HOST"
-        echo "SSH User: $SSH_USER"
-        
-        # Log first 10 characters of key (for verification, not full key)
-        echo "SSH Key (first 10 chars): $(head -c 10 ~/.ssh/deploy_key)"
-        
-        # Create a detailed SSH command log script
-        cat > ~/ssh_debug.sh << 'EOF'
-        #!/bin/bash
-        set -x  # Enable verbose logging of every command
-        
-        # Capture all SSH command details
-        echo "Running SSH command: $@" >> ~/ssh_command.log
-        
-        # Execute the actual SSH command
-        ssh \
-          -vvv \
-          -i ~/.ssh/deploy_key \
-          -o StrictHostKeyChecking=no \
-          -o UserKnownHostsFile=/dev/null \
-          "$@"
-        EOF
-        
-        chmod +x ~/ssh_debug.sh
-
-    - name: Debug SSH Connection
-      env:
-        SSH_HOST: ${{ secrets.SSH_HOST }}
-        SSH_USER: ${{ secrets.SSH_USERNAME }}
-      run: |
-        # Attempt connection with maximum verbosity
-        ~/ssh_debug.sh $SSH_USER@$SSH_HOST 'echo "SSH Debug Connection Test"'
-        
-        # Log connection attempt details
-        cat ~/ssh_command.log
-        cat ~/.ssh/known_hosts
-
-    - name: Deploy to Shared Hosting
-      uses: appleboy/drone-ssh@master
+    - name: Deploy to Shared Hosting via SSH
+      uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.SSH_HOST }}
+        port: 21098
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          # Verbose logging of deployment steps
-          set -x
-          pwd
-          whoami
           cd public_html
           git pull origin main
           composer install --prefer-dist --no-dev --optimize-autoloader
           php artisan optimize
           php artisan config:clear
           php artisan cache:clear
-        debug: true  # Enable maximum logging
-
-    - name: Upload SSH Logs
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: ssh-debug-logs
-        path: |
-          ~/ssh_command.log
-          ~/.ssh/known_hosts
