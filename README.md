@@ -1,4 +1,4 @@
-<p align="center">[![Deployment](https://github.com/josephajibodu/josephajibodu.com/actions/workflows/deploy.yml/badge.svg)](https://github.com/josephajibodu/josephajibodu.com/actions/workflows/deploy.yml)</p>
+[![Deployment](https://github.com/josephajibodu/josephajibodu.com/actions/workflows/deploy.yml/badge.svg)](https://github.com/josephajibodu/josephajibodu.com/actions/workflows/deploy.yml)
 
 ## About Me
 
